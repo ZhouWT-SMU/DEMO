@@ -8,11 +8,14 @@ const STORAGE_KEYS = {
     userId: 'enterpriseChatUserId',
     conversationPrefix: 'enterpriseChatConversation:',
     historyPrefix: 'enterpriseChatHistory:',
+    enterpriseSession: 'sceneHubEnterpriseSession',
+    adminSession: 'sceneHubAdminSession',
 };
 
 const panelStates = new WeakMap();
 let cachedUserId = null;
-let currentUser = null;
+let enterpriseSession = null;
+let adminSession = null;
 let submissionCache = [];
 let uploadHistory = [];
 
@@ -33,6 +36,30 @@ function getStorage() {
 }
 
 const storage = getStorage();
+
+function persistSession(type, session) {
+    if (!storage) return;
+    const key = type === 'admin' ? STORAGE_KEYS.adminSession : STORAGE_KEYS.enterpriseSession;
+
+    if (!session) {
+        storage.removeItem(key);
+        return;
+    }
+
+    try {
+        storage.setItem(key, JSON.stringify(session));
+    } catch (error) {
+        console.warn('会话持久化失败', error);
+    }
+}
+
+function restoreSession(type) {
+    if (!storage) return null;
+    const key = type === 'admin' ? STORAGE_KEYS.adminSession : STORAGE_KEYS.enterpriseSession;
+    const raw = storage.getItem(key);
+    if (!raw) return null;
+    return safeJsonParse(raw, null);
+}
 
 function getUserId() {
     if (cachedUserId) {
@@ -160,6 +187,17 @@ function handleNavigation() {
                 return;
             }
 
+            if (item.dataset.requiresAdmin && !adminSession) {
+                showAdminOverlay();
+            }
+
+            if (item.dataset.roleVisible === 'ENTERPRISE' && !enterpriseSession) {
+                const overlay = document.getElementById('authOverlay');
+                if (overlay) {
+                    overlay.classList.remove('hidden');
+                }
+            }
+
             setActiveModule(item);
         });
     });
@@ -181,10 +219,30 @@ function renderAssistantMessage(target, content) {
     }
 }
 
-function updateUserStatus(statusText) {
-    const statusEl = document.getElementById('userStatus');
-    if (statusEl) {
-        statusEl.textContent = statusText || '请先登录';
+function updateStatusBadges() {
+    const userStatusEl = document.getElementById('userStatus');
+    const adminStatusEl = document.getElementById('adminStatus');
+    const logoutUserBtn = document.getElementById('logoutUser');
+    const logoutAdminBtn = document.getElementById('logoutAdmin');
+
+    if (userStatusEl) {
+        userStatusEl.textContent = enterpriseSession
+            ? `企业用户：${enterpriseSession.displayName || enterpriseSession.username || '已登录'}`
+            : '企业用户：未登录';
+    }
+
+    if (adminStatusEl) {
+        adminStatusEl.textContent = adminSession
+            ? `管理员：${adminSession.displayName || adminSession.username || '已登录'}`
+            : '管理员：未登录';
+    }
+
+    if (logoutUserBtn) {
+        logoutUserBtn.classList.toggle('hidden', !enterpriseSession);
+    }
+
+    if (logoutAdminBtn) {
+        logoutAdminBtn.classList.toggle('hidden', !adminSession);
     }
 }
 
@@ -209,18 +267,9 @@ function applyRoleVisibility(role, navigationApi) {
             navigationApi.setActiveModule(first);
         }
     }
-
-    const capabilityModule = document.getElementById('capabilityModule');
-    const approvalModule = document.getElementById('approvalModule');
-    if (capabilityModule) {
-        capabilityModule.classList.toggle('hidden', role !== 'ENTERPRISE');
-    }
-    if (approvalModule) {
-        approvalModule.classList.toggle('hidden', role !== 'ADMIN');
-    }
 }
 
-async function login(username, password) {
+async function login(username, password, expectedRole) {
     const response = await fetch(AUTH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -231,6 +280,11 @@ async function login(username, password) {
     if (!response.ok || !payload.success) {
         throw new Error(payload.message || '登录失败');
     }
+
+    if (expectedRole && payload.role !== expectedRole) {
+        throw new Error(`请使用${expectedRole === 'ADMIN' ? '管理员' : '企业'}账号登录`);
+    }
+
     return payload;
 }
 
@@ -238,28 +292,36 @@ function setupAuth(navigationApi) {
     const overlay = document.getElementById('authOverlay');
     const form = document.getElementById('loginForm');
     const messageEl = document.getElementById('loginMessage');
+    const skipBtn = document.getElementById('skipUserLogin');
 
     if (!form) {
         return;
     }
 
     const setSession = (session) => {
-        currentUser = session;
-        updateUserStatus(`${session.displayName}（${session.role === 'ADMIN' ? '管理员' : '企业用户'}）`);
+        if (session.role !== 'ENTERPRISE') {
+            messageEl.textContent = '请使用企业账号登录，此入口不支持审批中心账号。';
+            messageEl.classList.add('visible');
+            return;
+        }
+
+        enterpriseSession = session;
+        persistSession('enterprise', session);
+        updateStatusBadges();
         applyRoleVisibility(session.role, navigationApi);
 
         if (overlay) {
             overlay.classList.add('hidden');
         }
 
-        if (session.role === 'ADMIN') {
-            fetchSubmissions();
-        } else if (session.role === 'ENTERPRISE') {
-            fetchUploadHistory();
-        }
-
+        fetchUploadHistory();
         renderUploadHistory(uploadHistory);
     };
+
+    const stored = restoreSession('enterprise');
+    if (stored) {
+        setSession(stored);
+    }
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -270,12 +332,89 @@ function setupAuth(navigationApi) {
         try {
             messageEl.textContent = '正在登录...';
             messageEl.classList.add('visible');
-            const session = await login(username, password);
+            const session = await login(username, password, 'ENTERPRISE');
             setSession(session);
             messageEl.textContent = '登录成功';
         } catch (error) {
             messageEl.textContent = error.message || '登录失败，请重试';
             messageEl.classList.add('visible');
+        }
+    });
+
+    if (skipBtn) {
+        skipBtn.addEventListener('click', () => {
+            if (overlay) {
+                overlay.classList.add('hidden');
+            }
+            updateStatusBadges();
+            applyRoleVisibility(enterpriseSession?.role || null, navigationApi);
+        });
+    }
+}
+
+function showAdminOverlay() {
+    const overlay = document.getElementById('adminAuthOverlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+    }
+}
+
+function hideAdminOverlay() {
+    const overlay = document.getElementById('adminAuthOverlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+    }
+}
+
+function setupAdminAuth() {
+    const form = document.getElementById('adminLoginForm');
+    const messageEl = document.getElementById('adminLoginMessage');
+    const skipBtn = document.getElementById('skipAdminLogin');
+    const closeBtn = document.getElementById('closeAdminOverlay');
+
+    if (!form) {
+        return;
+    }
+
+    const setAdminSession = (session) => {
+        if (session.role !== 'ADMIN') {
+            messageEl.textContent = '请使用管理员账号登录审批中心。';
+            messageEl.classList.add('visible');
+            return;
+        }
+        adminSession = session;
+        persistSession('admin', session);
+        updateStatusBadges();
+        hideAdminOverlay();
+        fetchSubmissions();
+    };
+
+    const stored = restoreSession('admin');
+    if (stored) {
+        setAdminSession(stored);
+    }
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formData = new FormData(form);
+        const username = formData.get('username');
+        const password = formData.get('password');
+
+        try {
+            messageEl.textContent = '正在登录...';
+            messageEl.classList.add('visible');
+            const session = await login(username, password, 'ADMIN');
+            setAdminSession(session);
+            messageEl.textContent = '登录成功';
+        } catch (error) {
+            messageEl.textContent = error.message || '登录失败，请重试';
+            messageEl.classList.add('visible');
+        }
+    });
+
+    [skipBtn, closeBtn].forEach((btn) => {
+        if (btn) {
+            btn.addEventListener('click', hideAdminOverlay);
         }
     });
 }
@@ -300,6 +439,15 @@ function formatDateTime(value) {
         return '-';
     }
     return date.toLocaleString('zh-CN', { hour12: false });
+}
+
+function setApprovalBanner(message, isError = false) {
+    const banner = document.getElementById('approvalMessage');
+    if (!banner) return;
+
+    banner.textContent = message || '';
+    banner.classList.toggle('visible', Boolean(message));
+    banner.classList.toggle('error', Boolean(isError));
 }
 
 function updateApprovalStats(list = []) {
@@ -358,17 +506,26 @@ function renderApprovalDetail(submission) {
 }
 
 function renderApprovalList(list = []) {
-    submissionCache = list;
     const listEl = document.getElementById('approvalList');
     if (!listEl) {
         return;
     }
 
+    if (!adminSession || adminSession.role !== 'ADMIN') {
+        submissionCache = [];
+        updateApprovalStats([]);
+        listEl.innerHTML = '<div class="history-empty">请登录管理员账号后查看提交记录</div>';
+        renderApprovalDetail(null);
+        return;
+    }
+
+    submissionCache = list;
     updateApprovalStats(list);
     listEl.innerHTML = '';
 
     if (!list.length) {
         listEl.innerHTML = '<div class="history-empty">暂无提交记录</div>';
+        renderApprovalDetail(null);
         return;
     }
 
@@ -396,13 +553,14 @@ function renderApprovalList(list = []) {
 }
 
 async function fetchSubmissions() {
-    if (!currentUser || currentUser.role !== 'ADMIN') {
+    if (!adminSession || adminSession.role !== 'ADMIN') {
+        renderApprovalList([]);
         return;
     }
 
     try {
         const response = await fetch(`${CAPABILITY_API_BASE}/submissions`, {
-            headers: { 'X-Auth-Token': currentUser.token },
+            headers: { 'X-Auth-Token': adminSession.token },
         });
 
         if (!response.ok) {
@@ -410,15 +568,47 @@ async function fetchSubmissions() {
         }
         const list = await response.json();
         renderApprovalList(Array.isArray(list) ? list : []);
+        setApprovalBanner('审批列表已刷新');
     } catch (error) {
         console.error('加载审批列表失败', error);
+        setApprovalBanner(error.message || '审批列表加载失败', true);
     }
+}
+
+function exportSubmissionsToXlsx() {
+    if (!submissionCache.length) {
+        setApprovalBanner('暂无数据可导出', true);
+        return;
+    }
+
+    if (typeof XLSX === 'undefined') {
+        setApprovalBanner('导出组件未加载，请检查网络后重试', true);
+        return;
+    }
+
+    const rows = submissionCache.map((item) => ({
+        企业名称: item.companyName || '',
+        统一信用代码: item.creditCode || '',
+        企业规模: item.companyScale || '',
+        企业类型: item.companyType || '',
+        企业地址: item.companyAddress || '',
+        联系人: item.contactName || '',
+        联系方式: item.contactInfo || '',
+        提交人: item.submittedBy || '',
+        提交时间: formatDateTime(item.createdAt),
+        审批状态: formatStatus(item.status).text,
+        处理备注: item.decisionRemark || '',
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '能力企业列表');
+    XLSX.writeFile(workbook, '能力企业列表.xlsx');
 }
 
 function setupApprovalModule() {
     const listEl = document.getElementById('approvalList');
     const detailEl = document.getElementById('approvalDetail');
-    const refreshBtn = document.getElementById('refreshSubmissions');
 
     if (!listEl) {
         return;
@@ -439,7 +629,8 @@ function setupApprovalModule() {
             return;
         }
 
-        if (!currentUser || currentUser.role !== 'ADMIN') {
+        if (!adminSession || adminSession.role !== 'ADMIN') {
+            setApprovalBanner('请先登录管理员账号后再执行审批。', true);
             return;
         }
 
@@ -448,7 +639,7 @@ function setupApprovalModule() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Auth-Token': currentUser.token,
+                    'X-Auth-Token': adminSession.token,
                 },
                 body: JSON.stringify({ decision: action }),
             });
@@ -461,10 +652,6 @@ function setupApprovalModule() {
             console.error('审批失败', error);
         }
     });
-
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => fetchSubmissions());
-    }
 
     if (detailEl) {
         detailEl.hidden = true;
@@ -1337,7 +1524,7 @@ function renderUploadHistory(list = []) {
 
     container.innerHTML = '';
 
-    if (!currentUser || currentUser.role !== 'ENTERPRISE') {
+    if (!enterpriseSession || enterpriseSession.role !== 'ENTERPRISE') {
         container.innerHTML = '<div class="history-empty">请使用企业账号登录后查看上传记录</div>';
         return;
     }
@@ -1375,14 +1562,14 @@ function renderUploadHistory(list = []) {
 }
 
 async function fetchUploadHistory() {
-    if (!currentUser || currentUser.role !== 'ENTERPRISE') {
+    if (!enterpriseSession || enterpriseSession.role !== 'ENTERPRISE') {
         renderUploadHistory([]);
         return;
     }
 
     try {
         const response = await fetch(`${CAPABILITY_API_BASE}/my-submissions`, {
-            headers: { 'X-Auth-Token': currentUser.token },
+            headers: { 'X-Auth-Token': enterpriseSession.token },
         });
 
         if (!response.ok) {
@@ -1424,7 +1611,7 @@ function setupCapabilityForm() {
 
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
-        if (!currentUser || currentUser.role !== 'ENTERPRISE') {
+        if (!enterpriseSession || enterpriseSession.role !== 'ENTERPRISE') {
             resultContainer.textContent = '请使用企业账号登录后再提交信息。';
             resultContainer.classList.add('visible');
             return;
@@ -1440,7 +1627,7 @@ function setupCapabilityForm() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Auth-Token': currentUser.token,
+                    'X-Auth-Token': enterpriseSession.token,
                 },
                 body: JSON.stringify(normalised),
             });
@@ -1519,18 +1706,67 @@ function resetDynamicList(containerId) {
     updateRemoveButtons(container);
 }
 
+function logoutEnterprise(navigationApi) {
+    enterpriseSession = null;
+    persistSession('enterprise', null);
+    updateStatusBadges();
+    applyRoleVisibility(null, navigationApi);
+    renderUploadHistory([]);
+    const overlay = document.getElementById('authOverlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+    }
+}
+
+function logoutAdmin() {
+    adminSession = null;
+    persistSession('admin', null);
+    updateStatusBadges();
+    renderApprovalList([]);
+    setApprovalBanner('已退出管理员登录');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const navigationApi = handleNavigation();
+    updateStatusBadges();
     applyRoleVisibility(null, navigationApi);
     setupAuth(navigationApi);
+    setupAdminAuth();
+    setupApprovalModule();
     setupChatPanels();
     setupCapabilityForm();
-    setupApprovalModule();
     renderUploadHistory(uploadHistory);
 
     const refreshUploadHistoryBtn = document.getElementById('refreshUploadHistory');
     if (refreshUploadHistoryBtn) {
         refreshUploadHistoryBtn.addEventListener('click', () => fetchUploadHistory());
+    }
+
+    const refreshSubmissionsBtn = document.getElementById('refreshSubmissions');
+    if (refreshSubmissionsBtn) {
+        refreshSubmissionsBtn.addEventListener('click', () => fetchSubmissions());
+    }
+
+    const exportSubmissionsBtn = document.getElementById('exportSubmissions');
+    if (exportSubmissionsBtn) {
+        exportSubmissionsBtn.addEventListener('click', () => {
+            if (!adminSession) {
+                setApprovalBanner('请先登录管理员后再导出列表', true);
+                showAdminOverlay();
+                return;
+            }
+            exportSubmissionsToXlsx();
+        });
+    }
+
+    const logoutUserBtn = document.getElementById('logoutUser');
+    if (logoutUserBtn) {
+        logoutUserBtn.addEventListener('click', () => logoutEnterprise(navigationApi));
+    }
+
+    const logoutAdminBtn = document.getElementById('logoutAdmin');
+    if (logoutAdminBtn) {
+        logoutAdminBtn.addEventListener('click', () => logoutAdmin());
     }
 
     const closeModalBtn = document.getElementById('closeUploadModal');

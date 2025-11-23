@@ -4,40 +4,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>企业服务平台</title>
+    <title>场景宝</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 
 <body>
 <div class="login-overlay" id="authOverlay">
     <div class="login-card">
-        <h2>登录平台</h2>
-        <p class="login-subtitle">请选择身份进入对应模块，账号信息仅用于演示。</p>
+        <h2>企业用户登录</h2>
+        <p class="login-subtitle">登录后可使用智能对话、能力上传与审批结果查询，账号信息仅用于演示。</p>
         <form id="loginForm" class="login-form">
             <label for="username">用户名</label>
-            <input id="username" name="username" type="text" placeholder="enterprise 或 admin" required>
+            <input id="username" name="username" type="text" placeholder="enterprise" required>
 
             <label for="password">密码</label>
             <input id="password" name="password" type="password" placeholder="示例：enterprise123" required>
 
             <div class="login-actions">
                 <button type="submit" class="primary-btn">登录</button>
+                <button type="button" class="ghost-btn" id="skipUserLogin">暂不登录</button>
                 <div class="login-help">
                     <p><strong>企业用户：</strong>enterprise / enterprise123</p>
-                    <p><strong>管理员：</strong>admin / admin123</p>
+                    <p>审批中心请从左侧菜单进入并单独登录。</p>
                 </div>
             </div>
             <div id="loginMessage" class="form-result"></div>
         </form>
     </div>
 </div>
+
+<div class="login-overlay hidden" id="adminAuthOverlay">
+    <div class="login-card">
+        <h2>审批中心登录</h2>
+        <p class="login-subtitle">仅管理员可登录审批中心，点击右上角可关闭并暂不登录。</p>
+        <button class="ghost-btn overlay-close" id="closeAdminOverlay" aria-label="关闭管理员登录">×</button>
+        <form id="adminLoginForm" class="login-form">
+            <label for="adminUsername">用户名</label>
+            <input id="adminUsername" name="username" type="text" placeholder="admin" required>
+
+            <label for="adminPassword">密码</label>
+            <input id="adminPassword" name="password" type="password" placeholder="示例：admin123" required>
+
+            <div class="login-actions">
+                <button type="submit" class="primary-btn">登录</button>
+                <button type="button" class="ghost-btn" id="skipAdminLogin">暂不登录</button>
+                <div class="login-help">
+                    <p><strong>管理员：</strong>admin / admin123</p>
+                    <p>不登录则无法操作审批功能。</p>
+                </div>
+            </div>
+            <div id="adminLoginMessage" class="form-result"></div>
+        </form>
+    </div>
+</div>
 <div class="app-shell">
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-icon">DES</div>
+            <div class="brand-icon brand-logo" aria-label="究模智科技标识"></div>
             <div class="brand-text">
-                <h1>企业服务平台</h1>
-                <p>Digital Enterprise Services</p>
+                <h1>场景宝</h1>
+                <p>Jomo AI · 科技驱动业务场景落地</p>
             </div>
         </div>
         <nav class="menu">
@@ -51,8 +78,13 @@
                 <span class="menu-icon" aria-hidden="true">📤</span>
                 <span class="menu-label">企业能力上传</span>
             </button>
-            <button class="menu-item" data-target="approvalModule" data-title="能力审批中心"
-                    data-description="查看企业能力提交并进行审批。" data-role-visible="ADMIN">
+            <button class="menu-item" data-target="resultModule" data-title="审批结果查询"
+                    data-description="独立查看每次能力提交的审核状态与反馈。" data-role-visible="ENTERPRISE">
+                <span class="menu-icon" aria-hidden="true">📑</span>
+                <span class="menu-label">审批结果查询</span>
+            </button>
+            <button class="menu-item" data-target="approvalModule" data-title="审批中心"
+                    data-description="管理员登录后查看、处理企业能力提交并导出列表。" data-requires-admin="true">
                 <span class="menu-icon" aria-hidden="true">📝</span>
                 <span class="menu-label">审批中心</span>
             </button>
@@ -61,6 +93,7 @@
             <div class="footer-tip">
                 <h3>操作提示</h3>
                 <p>在左侧选择功能模块，右侧区域将展示对应的业务界面。</p>
+                <p>审批中心支持登录后导出企业能力列表。</p>
             </div>
         </div>
     </aside>
@@ -71,7 +104,12 @@
                 <h2 id="moduleTitle">智能对话中台</h2>
                 <p id="moduleDescription">与企业智能助手实时沟通，获取政策、能力和服务建议。</p>
             </div>
-            <div class="user-status" id="userStatus">请先登录</div>
+            <div class="status-cluster">
+                <div class="user-status" id="userStatus">企业用户：未登录</div>
+                <div class="user-status" id="adminStatus">管理员：未登录</div>
+                <button class="ghost-btn" id="logoutUser" aria-label="退出企业登录">退出企业</button>
+                <button class="ghost-btn" id="logoutAdmin" aria-label="退出管理员登录">退出管理员</button>
+            </div>
         </header>
 
         <section id="chatModule" class="module active" aria-labelledby="moduleTitle">
@@ -263,19 +301,24 @@
                         </div>
                     </div>
 
-                    <div class="upload-history-panel" id="uploadHistoryPanel" aria-live="polite">
-                        <div class="panel-header">
-                            <div>
-                                <p class="history-title">上传历史</p>
-                                <p class="history-subtitle">查看每次提交的审核进度与结果</p>
-                            </div>
-                            <button type="button" class="ghost-btn" id="refreshUploadHistory">刷新记录</button>
-                        </div>
-                        <div id="uploadHistoryList" class="upload-history-list">
-                            <div class="history-empty">登录后可查看上传记录</div>
-                        </div>
-                    </div>
                 </aside>
+            </div>
+        </section>
+
+        <section id="resultModule" class="module" aria-labelledby="moduleTitle">
+            <div class="capability-layout">
+                <div class="upload-history-panel" id="uploadHistoryPanel" aria-live="polite">
+                    <div class="panel-header">
+                        <div>
+                            <p class="history-title">审批结果查询</p>
+                            <p class="history-subtitle">集中查看历史提交及审批反馈</p>
+                        </div>
+                        <button type="button" class="ghost-btn" id="refreshUploadHistory">刷新记录</button>
+                    </div>
+                    <div id="uploadHistoryList" class="upload-history-list">
+                        <div class="history-empty">登录后可查看上传记录</div>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -284,12 +327,17 @@
                 <div class="approval-header">
                     <div>
                         <h3>能力提交审批</h3>
-                        <p>查看企业上传的能力信息，支持详情、同意或拒绝。</p>
+                        <p class="muted">管理员登录后可查看、同意或拒绝企业提交，并支持导出列表。</p>
                     </div>
                     <div class="approval-actions-bar">
                         <button type="button" class="ghost-btn" id="refreshSubmissions">刷新列表</button>
+                        <button type="button" class="icon-btn" id="exportSubmissions" title="导出能力企业列表">
+                            <span aria-hidden="true">📥</span><span>导出xlsx</span>
+                        </button>
                     </div>
                 </div>
+
+                <div id="approvalMessage" class="form-result"></div>
 
                 <div class="approval-stats" id="approvalStats">
                     <div class="stat-card" data-status="pending">
@@ -315,7 +363,7 @@
                             </div>
                         </div>
                         <div id="approvalList" class="approval-list" aria-live="polite">
-                            <div class="history-empty">暂无提交记录</div>
+                            <div class="history-empty">点击上方按钮登录管理员后查看提交记录</div>
                         </div>
                     </div>
                     <div class="approval-detail-panel">
@@ -330,6 +378,7 @@
                 </div>
             </div>
         </section>
+
     </main>
 </div>
 
