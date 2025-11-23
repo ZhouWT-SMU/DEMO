@@ -18,6 +18,7 @@ let enterpriseSession = null;
 let adminSession = null;
 let submissionCache = [];
 let uploadHistory = [];
+let activeModuleId = 'chatModule';
 
 if (window.marked) {
     window.marked.setOptions({
@@ -179,6 +180,10 @@ function handleNavigation() {
         if (moduleDescription) {
             moduleDescription.textContent = item.dataset.description || '';
         }
+
+        activeModuleId = targetId;
+        updateStatusBadges(activeModuleId);
+        toggleApprovalVisibility();
     };
 
     menuItems.forEach((item) => {
@@ -219,22 +224,27 @@ function renderAssistantMessage(target, content) {
     }
 }
 
-function updateStatusBadges() {
+function updateStatusBadges(currentModuleId = activeModuleId) {
     const userStatusEl = document.getElementById('userStatus');
     const adminStatusEl = document.getElementById('adminStatus');
     const logoutUserBtn = document.getElementById('logoutUser');
     const logoutAdminBtn = document.getElementById('logoutAdmin');
+    const adminControls = document.getElementById('adminControls');
+    const openAdminBtn = document.getElementById('openAdminLogin');
+
+    const enterpriseLabel = enterpriseSession
+        ? `企业账号：${enterpriseSession.displayName || enterpriseSession.username}（${enterpriseSession.username}）`
+        : '企业账号：未登录';
+    const adminLabel = adminSession
+        ? `管理员账号：${adminSession.displayName || adminSession.username}（${adminSession.username}）`
+        : '管理员账号：未登录';
 
     if (userStatusEl) {
-        userStatusEl.textContent = enterpriseSession
-            ? `企业用户：${enterpriseSession.displayName || enterpriseSession.username || '已登录'}`
-            : '企业用户：未登录';
+        userStatusEl.textContent = enterpriseLabel;
     }
 
     if (adminStatusEl) {
-        adminStatusEl.textContent = adminSession
-            ? `管理员：${adminSession.displayName || adminSession.username || '已登录'}`
-            : '管理员：未登录';
+        adminStatusEl.textContent = adminLabel;
     }
 
     if (logoutUserBtn) {
@@ -243,6 +253,28 @@ function updateStatusBadges() {
 
     if (logoutAdminBtn) {
         logoutAdminBtn.classList.toggle('hidden', !adminSession);
+    }
+
+    if (openAdminBtn) {
+        openAdminBtn.classList.toggle('hidden', Boolean(adminSession));
+    }
+
+    if (adminControls) {
+        adminControls.classList.toggle('hidden', currentModuleId !== 'approvalModule');
+    }
+}
+
+function toggleApprovalVisibility() {
+    const lockEl = document.getElementById('approvalLockedState');
+    const contentEl = document.getElementById('approvalContent');
+    const locked = !adminSession || adminSession.role !== 'ADMIN';
+
+    if (lockEl) {
+        lockEl.classList.toggle('hidden', !locked);
+    }
+
+    if (contentEl) {
+        contentEl.classList.toggle('hidden', locked);
     }
 }
 
@@ -292,7 +324,6 @@ function setupAuth(navigationApi) {
     const overlay = document.getElementById('authOverlay');
     const form = document.getElementById('loginForm');
     const messageEl = document.getElementById('loginMessage');
-    const skipBtn = document.getElementById('skipUserLogin');
 
     if (!form) {
         return;
@@ -307,7 +338,7 @@ function setupAuth(navigationApi) {
 
         enterpriseSession = session;
         persistSession('enterprise', session);
-        updateStatusBadges();
+        updateStatusBadges(activeModuleId);
         applyRoleVisibility(session.role, navigationApi);
 
         if (overlay) {
@@ -340,16 +371,6 @@ function setupAuth(navigationApi) {
             messageEl.classList.add('visible');
         }
     });
-
-    if (skipBtn) {
-        skipBtn.addEventListener('click', () => {
-            if (overlay) {
-                overlay.classList.add('hidden');
-            }
-            updateStatusBadges();
-            applyRoleVisibility(enterpriseSession?.role || null, navigationApi);
-        });
-    }
 }
 
 function showAdminOverlay() {
@@ -384,7 +405,8 @@ function setupAdminAuth() {
         }
         adminSession = session;
         persistSession('admin', session);
-        updateStatusBadges();
+        updateStatusBadges(activeModuleId);
+        toggleApprovalVisibility();
         hideAdminOverlay();
         fetchSubmissions();
     };
@@ -477,6 +499,8 @@ function renderApprovalDetail(submission) {
     }
 
     const statusInfo = formatStatus(submission.status);
+    const decisionName = submission.decisionByName || submission.decisionBy;
+    const decisionReason = submission.decisionReason || submission.decisionRemark;
     detail.dataset.id = submission.id;
     detail.hidden = false;
     detail.innerHTML = `
@@ -496,9 +520,11 @@ function renderApprovalDetail(submission) {
             <div><span>联系方式</span><strong>${submission.contactInfo || '-'}</strong></div>
             <div><span>提交时间</span><strong>${formatDateTime(submission.createdAt)}</strong></div>
             <div><span>处理时间</span><strong>${formatDateTime(submission.decisionAt)}</strong></div>
-            <div><span>处理备注</span><strong>${submission.decisionRemark || '—'}</strong></div>
+            <div><span>审批人</span><strong>${decisionName || '—'}</strong></div>
+            <div><span>审批意见</span><strong>${decisionReason || '—'}</strong></div>
         </div>
         <div class="result-section"><h4>业务简介</h4><p>${submission.businessIntro || '—'}</p></div>
+        ${decisionReason ? `<div class="result-section"><h4>审批理由</h4><p>${decisionReason}</p></div>` : ''}
         ${renderArraySection('核心产品', submission.coreProducts)}
         ${renderArraySection('知识产权', submission.intellectualProperties)}
         ${renderArraySection('专利', submission.patents)}
@@ -531,21 +557,22 @@ function renderApprovalList(list = []) {
 
     list.forEach((item) => {
         const statusInfo = formatStatus(item.status);
-        const card = document.createElement('div');
-        card.className = 'approval-card';
-        card.innerHTML = `
-            <div class="approval-meta">
-                <div class="meta-top">
-                    <h4>${item.companyName || '未命名企业'}</h4>
-                    <div class="tag ${statusInfo.className}">${statusInfo.text}</div>
-                </div>
-                <p class="muted">提交人：${item.submittedBy || '未知'} · ${formatDateTime(item.createdAt)}</p>
-                <p class="muted">统一信用代码：${item.creditCode || '-'}</p>
-            </div>
-            <div class="approval-actions">
-                <button class="ghost-btn" data-approval-action="view" data-id="${item.id}">查看</button>
-                <button class="ghost-btn" data-approval-action="approve" data-id="${item.id}">同意</button>
-                <button class="ghost-btn" data-approval-action="reject" data-id="${item.id}">拒绝</button>
+                const card = document.createElement('div');
+                card.className = 'approval-card';
+                card.innerHTML = `
+                    <div class="approval-meta">
+                        <div class="meta-top">
+                            <h4>${item.companyName || '未命名企业'}</h4>
+                            <div class="tag ${statusInfo.className}">${statusInfo.text}</div>
+                        </div>
+                        <p class="muted">提交人：${item.submittedBy || '未知'} · ${formatDateTime(item.createdAt)}</p>
+                        <p class="muted">统一信用代码：${item.creditCode || '-'}</p>
+                        ${item.decisionByName || item.decisionReason ? `<p class="muted">审批人：${item.decisionByName || item.decisionBy || '—'}${item.decisionReason ? ` · ${item.decisionReason}` : ''}</p>` : ''}
+                    </div>
+                    <div class="approval-actions">
+                        <button class="ghost-btn" data-approval-action="view" data-id="${item.id}">查看</button>
+                        <button class="ghost-btn" data-approval-action="approve" data-id="${item.id}">同意</button>
+                        <button class="ghost-btn" data-approval-action="reject" data-id="${item.id}">拒绝</button>
             </div>
         `;
         listEl.appendChild(card);
@@ -597,6 +624,9 @@ function exportSubmissionsToXlsx() {
         提交人: item.submittedBy || '',
         提交时间: formatDateTime(item.createdAt),
         审批状态: formatStatus(item.status).text,
+        审批人: item.decisionByName || item.decisionBy || '',
+        审批时间: formatDateTime(item.decisionAt),
+        审批理由: item.decisionReason || item.decisionRemark || '',
         处理备注: item.decisionRemark || '',
     }));
 
@@ -634,6 +664,16 @@ function setupApprovalModule() {
             return;
         }
 
+        const reason = window.prompt(`请输入${action === 'approve' ? '同意' : '拒绝'}理由`);
+        if (reason === null) {
+            return;
+        }
+        const trimmedReason = reason.trim();
+        if (!trimmedReason) {
+            setApprovalBanner('请填写审批理由后再提交', true);
+            return;
+        }
+
         try {
             await fetch(`${CAPABILITY_API_BASE}/submissions/${id}/decision`, {
                 method: 'POST',
@@ -641,15 +681,17 @@ function setupApprovalModule() {
                     'Content-Type': 'application/json',
                     'X-Auth-Token': adminSession.token,
                 },
-                body: JSON.stringify({ decision: action }),
+                body: JSON.stringify({ decision: action, remark: trimmedReason }),
             });
             await fetchSubmissions();
             const updated = submissionCache.find((entry) => entry.id === id);
             if (detailEl && !detailEl.hidden && updated) {
                 renderApprovalDetail(updated);
             }
+            setApprovalBanner(action === 'approve' ? '审批已同意' : '审批已拒绝');
         } catch (error) {
             console.error('审批失败', error);
+            setApprovalBanner('审批失败，请稍后重试', true);
         }
     });
 
@@ -1516,15 +1558,34 @@ function renderArraySection(title, values) {
     `;
 }
 
+function updateHistorySummary(list = []) {
+    const pending = list.filter((item) => (item.status || '').toUpperCase() === 'PENDING').length;
+    const approved = list.filter((item) => (item.status || '').toUpperCase() === 'APPROVED').length;
+    const rejected = list.filter((item) => (item.status || '').toUpperCase() === 'REJECTED').length;
+
+    const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = value;
+        }
+    };
+
+    setText('historyPending', pending);
+    setText('historyApproved', approved);
+    setText('historyRejected', rejected);
+}
+
 function renderUploadHistory(list = []) {
     const container = document.getElementById('uploadHistoryList');
     if (!container) {
         return;
     }
 
+    updateHistorySummary(Array.isArray(list) ? list : []);
     container.innerHTML = '';
 
     if (!enterpriseSession || enterpriseSession.role !== 'ENTERPRISE') {
+        updateHistorySummary([]);
         container.innerHTML = '<div class="history-empty">请使用企业账号登录后查看上传记录</div>';
         return;
     }
@@ -1536,6 +1597,8 @@ function renderUploadHistory(list = []) {
 
     list.forEach((item) => {
         const statusInfo = formatStatus(item.status);
+        const decisionName = item.decisionByName || item.decisionBy;
+        const decisionReason = item.decisionReason || item.decisionRemark;
         const card = document.createElement('div');
         card.className = 'history-card';
         card.innerHTML = `
@@ -1547,6 +1610,7 @@ function renderUploadHistory(list = []) {
                     </div>
                     <p class="muted">提交时间：${formatDateTime(item.createdAt)}</p>
                     <p class="muted">审核时间：${formatDateTime(item.decisionAt)}</p>
+                    <p class="muted">审批人：${decisionName || '待分配'}</p>
                 </div>
                 <div class="history-meta">
                     <span class="muted">统一信用代码</span>
@@ -1554,7 +1618,7 @@ function renderUploadHistory(list = []) {
                     <span class="muted">${item.companyType || ''}</span>
                 </div>
             </div>
-            ${item.decisionRemark ? `<p class="muted">备注：${item.decisionRemark}</p>` : ''}
+            ${decisionReason ? `<div class="history-remark"><span>审批意见</span><p>${decisionReason}</p></div>` : ''}
         `;
 
         container.appendChild(card);
@@ -1709,7 +1773,7 @@ function resetDynamicList(containerId) {
 function logoutEnterprise(navigationApi) {
     enterpriseSession = null;
     persistSession('enterprise', null);
-    updateStatusBadges();
+    updateStatusBadges(activeModuleId);
     applyRoleVisibility(null, navigationApi);
     renderUploadHistory([]);
     const overlay = document.getElementById('authOverlay');
@@ -1721,15 +1785,17 @@ function logoutEnterprise(navigationApi) {
 function logoutAdmin() {
     adminSession = null;
     persistSession('admin', null);
-    updateStatusBadges();
+    updateStatusBadges(activeModuleId);
     renderApprovalList([]);
     setApprovalBanner('已退出管理员登录');
+    toggleApprovalVisibility();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const navigationApi = handleNavigation();
-    updateStatusBadges();
     applyRoleVisibility(null, navigationApi);
+    updateStatusBadges(activeModuleId);
+    toggleApprovalVisibility();
     setupAuth(navigationApi);
     setupAdminAuth();
     setupApprovalModule();
@@ -1767,6 +1833,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutAdminBtn = document.getElementById('logoutAdmin');
     if (logoutAdminBtn) {
         logoutAdminBtn.addEventListener('click', () => logoutAdmin());
+    }
+
+    const openAdminBtn = document.getElementById('openAdminLogin');
+    if (openAdminBtn) {
+        openAdminBtn.addEventListener('click', showAdminOverlay);
+    }
+
+    const openAdminFromLock = document.getElementById('openAdminFromLock');
+    if (openAdminFromLock) {
+        openAdminFromLock.addEventListener('click', showAdminOverlay);
     }
 
     const closeModalBtn = document.getElementById('closeUploadModal');

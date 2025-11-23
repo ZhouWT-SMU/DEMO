@@ -23,7 +23,6 @@
 
             <div class="login-actions">
                 <button type="submit" class="primary-btn">登录</button>
-                <button type="button" class="ghost-btn" id="skipUserLogin">暂不登录</button>
                 <div class="login-help">
                     <p><strong>企业用户：</strong>enterprise / enterprise123</p>
                     <p>审批中心请从左侧菜单进入并单独登录。</p>
@@ -105,10 +104,15 @@
                 <p id="moduleDescription">与企业智能助手实时沟通，获取政策、能力和服务建议。</p>
             </div>
             <div class="status-cluster">
-                <div class="user-status" id="userStatus">企业用户：未登录</div>
-                <div class="user-status" id="adminStatus">管理员：未登录</div>
-                <button class="ghost-btn" id="logoutUser" aria-label="退出企业登录">退出企业</button>
-                <button class="ghost-btn" id="logoutAdmin" aria-label="退出管理员登录">退出管理员</button>
+                <div class="status-group">
+                    <div class="user-status" id="userStatus">企业账号：未登录</div>
+                    <button class="ghost-btn" id="logoutUser" aria-label="退出企业登录">退出企业</button>
+                </div>
+                <div class="status-group hidden" id="adminControls">
+                    <div class="user-status" id="adminStatus">管理员账号：未登录</div>
+                    <button class="ghost-btn" id="openAdminLogin" aria-label="打开管理员登录">管理员登录</button>
+                    <button class="ghost-btn" id="logoutAdmin" aria-label="退出管理员登录">退出管理员</button>
+                </div>
             </div>
         </header>
 
@@ -306,31 +310,111 @@
         </section>
 
         <section id="resultModule" class="module" aria-labelledby="moduleTitle">
-            <div class="capability-layout">
-                <div class="upload-history-panel" id="uploadHistoryPanel" aria-live="polite">
-                    <div class="panel-header">
-                        <div>
-                            <p class="history-title">审批结果查询</p>
-                            <p class="history-subtitle">集中查看历史提交及审批反馈</p>
+            <div class="result-layout">
+                <div class="result-hero">
+                    <div>
+                        <p class="eyebrow">审批结果查询</p>
+                        <h3>随时跟进每一次审核进度</h3>
+                        <p class="muted">结合审批状态、审批人和备注，快速锁定需要补充的资料。右侧提示帮助团队协同跟进。</p>
+                        <div class="hero-chips">
+                            <span class="pill">实时同步</span>
+                            <span class="pill pill-ghost">审批备注</span>
+                            <span class="pill pill-ghost">导出追踪</span>
                         </div>
-                        <button type="button" class="ghost-btn" id="refreshUploadHistory">刷新记录</button>
+                        <div class="hero-steps">
+                            <div class="step">提交资料</div>
+                            <div class="step">等待审核</div>
+                            <div class="step">查看反馈</div>
+                            <div class="step">补充完善</div>
+                        </div>
                     </div>
-                    <div id="uploadHistoryList" class="upload-history-list">
-                        <div class="history-empty">登录后可查看上传记录</div>
+                    <div class="hero-card">
+                        <div class="hero-card-head">最新提醒</div>
+                        <p>登录后可显示最近一次提交的状态与审批人意见，帮助快速响应。</p>
+                        <ul>
+                            <li>查看审批人姓名与意见</li>
+                            <li>根据理由调整材料再次提交</li>
+                            <li>导出结果便于团队内部同步</li>
+                        </ul>
                     </div>
+                </div>
+
+                <div class="result-summary-bar">
+                    <div class="summary-card" data-status="pending">
+                        <p>待审核</p>
+                        <strong id="historyPending">0</strong>
+                        <span>等待管理员处理</span>
+                    </div>
+                    <div class="summary-card" data-status="approved">
+                        <p>已通过</p>
+                        <strong id="historyApproved">0</strong>
+                        <span>可准备下一步合作</span>
+                    </div>
+                    <div class="summary-card" data-status="rejected">
+                        <p>已拒绝</p>
+                        <strong id="historyRejected">0</strong>
+                        <span>可根据原因重新提交</span>
+                    </div>
+                </div>
+
+                <div class="result-grid">
+                    <div class="upload-history-panel" id="uploadHistoryPanel" aria-live="polite">
+                        <div class="panel-header">
+                            <div>
+                                <p class="history-title">审批结果查询</p>
+                                <p class="history-subtitle">集中查看历史提交、审批反馈与审批人备注</p>
+                            </div>
+                            <div class="panel-actions">
+                                <button type="button" class="ghost-btn" id="refreshUploadHistory">刷新记录</button>
+                            </div>
+                        </div>
+                        <div class="history-helper">
+                            <p>可按卡片查看每一次提交的审批人及处理意见，方便快速定位需要补充的材料。</p>
+                            <ul>
+                                <li>审批中：系统已接收，等待管理员处理</li>
+                                <li>通过：可继续与管理员沟通上线或导出</li>
+                                <li>拒绝：查看原因并根据提示修改重新提交</li>
+                            </ul>
+                        </div>
+                        <div id="uploadHistoryList" class="upload-history-list">
+                            <div class="history-empty">登录后可查看上传记录</div>
+                        </div>
+                    </div>
+                    <aside class="result-sidebar">
+                        <div class="insight-card">
+                            <h4>进度追踪建议</h4>
+                            <p>对关键提交添加备注，方便团队内同步；若审批被拒绝，可结合审批人填写的原因调整材料后再次提交。</p>
+                        </div>
+                        <div class="insight-card">
+                            <h4>补充材料清单</h4>
+                            <ul class="bullet-list">
+                                <li>最新的业务介绍或产品手册</li>
+                                <li>能够体现竞争力的成功案例与数据</li>
+                                <li>资质证明、知识产权或合作协议</li>
+                                <li>明确的联系人信息和可沟通时间</li>
+                            </ul>
+                        </div>
+                    </aside>
                 </div>
             </div>
         </section>
 
         <section id="approvalModule" class="module" aria-labelledby="moduleTitle">
-            <div class="approval-layout">
+            <div id="approvalLockedState" class="approval-locked">
+                <div class="lock-icon" aria-hidden="true">🔒</div>
+                <div>
+                    <h3>需要管理员身份</h3>
+                    <p class="muted">请使用管理员账号登录后查看并处理提交列表。</p>
+                </div>
+                <button type="button" class="primary-btn" id="openAdminFromLock">管理员登录</button>
+            </div>
+            <div class="approval-layout hidden" id="approvalContent">
                 <div class="approval-header">
                     <div>
                         <h3>能力提交审批</h3>
                         <p class="muted">管理员登录后可查看、同意或拒绝企业提交，并支持导出列表。</p>
                     </div>
                     <div class="approval-actions-bar">
-                        <button type="button" class="ghost-btn" id="refreshSubmissions">刷新列表</button>
                         <button type="button" class="icon-btn" id="exportSubmissions" title="导出能力企业列表">
                             <span aria-hidden="true">📥</span><span>导出xlsx</span>
                         </button>
@@ -360,6 +444,9 @@
                             <div>
                                 <p class="history-title">提交列表</p>
                                 <p class="history-subtitle">按提交时间倒序展示</p>
+                            </div>
+                            <div class="panel-actions">
+                                <button type="button" class="ghost-btn" id="refreshSubmissions">刷新列表</button>
                             </div>
                         </div>
                         <div id="approvalList" class="approval-list" aria-live="polite">

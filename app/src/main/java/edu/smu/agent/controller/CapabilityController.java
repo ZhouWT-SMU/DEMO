@@ -92,6 +92,10 @@ public class CapabilityController {
         String decision = body.get("decision");
         String remark = body.getOrDefault("remark", "");
 
+        if (remark.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "请填写审批理由"));
+        }
+
         Status status;
         if ("approve".equalsIgnoreCase(decision)) {
             status = Status.APPROVED;
@@ -101,7 +105,12 @@ public class CapabilityController {
             return ResponseEntity.badRequest().body(Map.of("message", "决策参数错误"));
         }
 
-        Submission updated = submissionService.decide(id, status, remark);
+        Submission updated = submissionService.decide(
+                id,
+                status,
+                remark,
+                session.username(),
+                session.displayName());
         if (updated == null) {
             return ResponseEntity.notFound().build();
         }
