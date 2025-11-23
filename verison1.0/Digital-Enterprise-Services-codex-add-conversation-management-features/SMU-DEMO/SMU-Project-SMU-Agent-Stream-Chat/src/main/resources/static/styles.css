@@ -62,29 +62,39 @@ a {
 .brand {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, rgba(39, 94, 254, 0.14), rgba(63, 140, 255, 0.18));
+    box-shadow: var(--shadow-soft);
 }
 
 .brand-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 18px;
+    width: 78px;
+    height: 78px;
+    border-radius: 20px;
     background: linear-gradient(135deg, rgba(39, 94, 254, 0.95), rgba(63, 140, 255, 0.9));
     display: grid;
     place-items: center;
     font-weight: 700;
     letter-spacing: 1px;
+    box-shadow: 0 12px 26px rgba(39, 94, 254, 0.38);
+}
+
+.brand-logo {
+    background: #0a3ea8 url('assets/jomo-ai-logo.svg') center/72% no-repeat;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
 .brand-text h1 {
-    font-size: 1.35rem;
-    font-weight: 600;
-    margin-bottom: 4px;
+    font-size: 1.45rem;
+    font-weight: 700;
+    margin-bottom: 6px;
 }
 
 .brand-text p {
-    font-size: 0.75rem;
-    color: rgba(247, 250, 252, 0.7);
+    font-size: 0.82rem;
+    color: rgba(247, 250, 252, 0.82);
 }
 
 .menu {
@@ -140,6 +150,30 @@ a {
     background: rgba(255, 255, 255, 0.08);
 }
 
+.approval-entry {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.06);
+    color: #f7fafc;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.approval-entry:hover,
+.approval-entry:focus {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
+}
+
+.approval-entry p {
+    font-size: 0.78rem;
+    color: rgba(247, 250, 252, 0.8);
+}
+
 .footer-tip h3 {
     font-size: 0.95rem;
     margin-bottom: 6px;
@@ -171,6 +205,12 @@ a {
     align-items: center;
 }
 
+.action-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
 .content-header h2 {
     font-size: 1.8rem;
     font-weight: 600;
@@ -182,8 +222,20 @@ a {
     font-size: 0.98rem;
 }
 
+.status-cluster {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.status-cluster .ghost-btn {
+    padding: 8px 12px;
+}
+
 .user-status {
-    padding: 10px 18px;
+    padding: 8px 14px;
     background: rgba(39, 94, 254, 0.12);
     color: var(--primary);
     border-radius: 999px;
@@ -193,6 +245,26 @@ a {
     box-shadow: inset 0 0 0 1px rgba(39, 94, 254, 0.2);
     min-width: 140px;
     text-align: center;
+}
+
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    background: rgba(39, 94, 254, 0.12);
+    border: 1px solid rgba(39, 94, 254, 0.25);
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.icon-btn:hover,
+.icon-btn:focus {
+    background: rgba(39, 94, 254, 0.2);
+    transform: translateY(-1px);
 }
 
 .login-overlay {
@@ -214,6 +286,18 @@ a {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    position: relative;
+}
+
+.overlay-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: #f5f7fb;
+    cursor: pointer;
 }
 
 .modal-overlay {
