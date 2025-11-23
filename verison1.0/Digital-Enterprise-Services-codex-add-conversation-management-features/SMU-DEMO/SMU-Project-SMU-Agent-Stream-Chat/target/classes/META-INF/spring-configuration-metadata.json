@@ -1,0 +1,27 @@
+{
+  "groups": [
+    {
+      "name": "dify",
+      "type": "edu.smu.agent.config.DifyProperties",
+      "sourceType": "edu.smu.agent.config.DifyProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "dify.base-url",
+      "type": "java.lang.String",
+      "description": "Dify API 基础 URL",
+      "sourceType": "edu.smu.agent.config.DifyProperties"
+    },
+    {
+      "name": "dify.chatflow-api-key",
+      "type": "java.lang.String",
+      "description": "Dify Chatflow API Key",
+      "sourceType": "edu.smu.agent.config.DifyProperties"
+    }
+  ],
+  "hints": [],
+  "ignored": {
+    "properties": []
+  }
+}
