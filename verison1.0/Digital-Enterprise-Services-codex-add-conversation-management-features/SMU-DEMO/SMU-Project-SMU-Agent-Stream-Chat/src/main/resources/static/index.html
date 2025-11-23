@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>企业服务平台</title>
+    <title>场景宝</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
@@ -12,7 +12,7 @@
 <div class="login-overlay" id="authOverlay">
     <div class="login-card">
         <h2>登录平台</h2>
-        <p class="login-subtitle">请选择身份进入对应模块，账号信息仅用于演示。</p>
+        <p class="login-subtitle">请使用企业账号进入能力上传与智能对话模块，账号信息仅用于演示。</p>
         <form id="loginForm" class="login-form">
             <label for="username">用户名</label>
             <input id="username" name="username" type="text" placeholder="enterprise 或 admin" required>
@@ -24,7 +24,7 @@
                 <button type="submit" class="primary-btn">登录</button>
                 <div class="login-help">
                     <p><strong>企业用户：</strong>enterprise / enterprise123</p>
-                    <p><strong>管理员：</strong>admin / admin123</p>
+                    <p><strong>审批中心请通过页面右侧入口登录</strong></p>
                 </div>
             </div>
             <div id="loginMessage" class="form-result"></div>
@@ -34,10 +34,10 @@
 <div class="app-shell">
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-icon">DES</div>
+            <div class="brand-icon brand-logo" aria-label="究模智科技标识"></div>
             <div class="brand-text">
-                <h1>企业服务平台</h1>
-                <p>Digital Enterprise Services</p>
+                <h1>场景宝</h1>
+                <p>Jomo AI · 科技驱动业务场景落地</p>
             </div>
         </div>
         <nav class="menu">
@@ -47,20 +47,22 @@
                 <span class="menu-label">智能对话</span>
             </button>
             <button class="menu-item" data-target="capabilityModule" data-title="企业能力上传"
-                    data-description="集中管理企业能力信息，便于平台审核、推介和匹配。" data-role-visible="ENTERPRISE">
+                    data-description="集中管理企业能力信息，便于平台审核、推介和匹配。">
                 <span class="menu-icon" aria-hidden="true">📤</span>
                 <span class="menu-label">企业能力上传</span>
-            </button>
-            <button class="menu-item" data-target="approvalModule" data-title="能力审批中心"
-                    data-description="查看企业能力提交并进行审批。" data-role-visible="ADMIN">
-                <span class="menu-icon" aria-hidden="true">📝</span>
-                <span class="menu-label">审批中心</span>
             </button>
         </nav>
         <div class="sidebar-footer">
             <div class="footer-tip">
                 <h3>操作提示</h3>
                 <p>在左侧选择功能模块，右侧区域将展示对应的业务界面。</p>
+                <a class="approval-entry" href="approval.html" target="_blank" rel="noopener noreferrer">
+                    <span class="menu-icon" aria-hidden="true">📝</span>
+                    <div>
+                        <strong>审批中心入口</strong>
+                        <p>点击后以管理员身份登录进入审批中心</p>
+                    </div>
+                </a>
             </div>
         </div>
     </aside>
@@ -279,57 +281,6 @@
             </div>
         </section>
 
-        <section id="approvalModule" class="module" aria-labelledby="moduleTitle">
-            <div class="approval-layout">
-                <div class="approval-header">
-                    <div>
-                        <h3>能力提交审批</h3>
-                        <p>查看企业上传的能力信息，支持详情、同意或拒绝。</p>
-                    </div>
-                    <div class="approval-actions-bar">
-                        <button type="button" class="ghost-btn" id="refreshSubmissions">刷新列表</button>
-                    </div>
-                </div>
-
-                <div class="approval-stats" id="approvalStats">
-                    <div class="stat-card" data-status="pending">
-                        <p>待审核</p>
-                        <strong id="statPending">0</strong>
-                    </div>
-                    <div class="stat-card" data-status="approved">
-                        <p>已通过</p>
-                        <strong id="statApproved">0</strong>
-                    </div>
-                    <div class="stat-card" data-status="rejected">
-                        <p>已拒绝</p>
-                        <strong id="statRejected">0</strong>
-                    </div>
-                </div>
-
-                <div class="approval-grid">
-                    <div class="approval-list-panel">
-                        <div class="panel-header">
-                            <div>
-                                <p class="history-title">提交列表</p>
-                                <p class="history-subtitle">按提交时间倒序展示</p>
-                            </div>
-                        </div>
-                        <div id="approvalList" class="approval-list" aria-live="polite">
-                            <div class="history-empty">暂无提交记录</div>
-                        </div>
-                    </div>
-                    <div class="approval-detail-panel">
-                        <div class="panel-header">
-                            <div>
-                                <p class="history-title">详情预览</p>
-                                <p class="history-subtitle">点击左侧卡片查看具体内容</p>
-                            </div>
-                        </div>
-                        <div id="approvalDetail" class="approval-detail" hidden></div>
-                    </div>
-                </div>
-            </div>
-        </section>
     </main>
 </div>
 

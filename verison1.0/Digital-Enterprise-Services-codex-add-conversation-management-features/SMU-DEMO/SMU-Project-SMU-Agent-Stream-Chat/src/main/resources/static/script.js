@@ -211,12 +211,8 @@ function applyRoleVisibility(role, navigationApi) {
     }
 
     const capabilityModule = document.getElementById('capabilityModule');
-    const approvalModule = document.getElementById('approvalModule');
     if (capabilityModule) {
         capabilityModule.classList.toggle('hidden', role !== 'ENTERPRISE');
-    }
-    if (approvalModule) {
-        approvalModule.classList.toggle('hidden', role !== 'ADMIN');
     }
 }
 
@@ -244,20 +240,21 @@ function setupAuth(navigationApi) {
     }
 
     const setSession = (session) => {
+        if (session.role !== 'ENTERPRISE') {
+            messageEl.textContent = '请使用企业账号登录，此入口不支持审批中心账号。';
+            messageEl.classList.add('visible');
+            return;
+        }
+
         currentUser = session;
-        updateUserStatus(`${session.displayName}（${session.role === 'ADMIN' ? '管理员' : '企业用户'}）`);
+        updateUserStatus(`${session.displayName}（企业用户）`);
         applyRoleVisibility(session.role, navigationApi);
 
         if (overlay) {
             overlay.classList.add('hidden');
         }
 
-        if (session.role === 'ADMIN') {
-            fetchSubmissions();
-        } else if (session.role === 'ENTERPRISE') {
-            fetchUploadHistory();
-        }
-
+        fetchUploadHistory();
         renderUploadHistory(uploadHistory);
     };
 
@@ -1525,7 +1522,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupAuth(navigationApi);
     setupChatPanels();
     setupCapabilityForm();
-    setupApprovalModule();
     renderUploadHistory(uploadHistory);
 
     const refreshUploadHistoryBtn = document.getElementById('refreshUploadHistory');

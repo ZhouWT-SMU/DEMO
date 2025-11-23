@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>审批中心 · 场景宝</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+<div class="login-overlay" id="authOverlay">
+    <div class="login-card">
+        <h2>审批中心登录</h2>
+        <p class="login-subtitle">请输入管理员账号后进入审批中心，账号信息仅用于演示。</p>
+        <form id="loginForm" class="login-form">
+            <label for="username">用户名</label>
+            <input id="username" name="username" type="text" placeholder="admin" required>
+
+            <label for="password">密码</label>
+            <input id="password" name="password" type="password" placeholder="示例：admin123" required>
+
+            <div class="login-actions">
+                <button type="submit" class="primary-btn">登录</button>
+                <div class="login-help">
+                    <p><strong>管理员：</strong>admin / admin123</p>
+                    <p>请不要使用企业账号登录审批中心。</p>
+                </div>
+            </div>
+            <div id="loginMessage" class="form-result"></div>
+        </form>
+    </div>
+</div>
+<div class="app-shell approval-shell">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon brand-logo" aria-label="究模智科技标识"></div>
+            <div class="brand-text">
+                <h1>审批中心</h1>
+                <p>场景宝 · 审批中台</p>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="footer-tip">
+                <h3>使用说明</h3>
+                <p>审批中心仅供管理员使用，点击右侧按钮可导出企业能力列表。</p>
+                <a class="approval-entry" href="index.html" rel="noopener noreferrer">
+                    <span class="menu-icon" aria-hidden="true">🏠</span>
+                    <div>
+                        <strong>返回首页</strong>
+                        <p>回到场景宝用户界面</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="content">
+        <header class="content-header">
+            <div class="header-copy">
+                <h2>能力提交审批</h2>
+                <p>查看企业上传的能力信息，支持详情、同意或拒绝。</p>
+            </div>
+            <div class="action-group">
+                <button type="button" class="ghost-btn" id="refreshSubmissions">刷新列表</button>
+                <button type="button" class="icon-btn" id="exportSubmissions" title="导出能力企业列表">
+                    <span aria-hidden="true">📥</span><span>导出xlsx</span>
+                </button>
+                <div class="user-status" id="userStatus">请先登录</div>
+            </div>
+        </header>
+
+        <div id="approvalMessage" class="form-result"></div>
+
+        <div class="approval-layout">
+            <div class="approval-stats" id="approvalStats">
+                <div class="stat-card" data-status="pending">
+                    <p>待审核</p>
+                    <strong id="statPending">0</strong>
+                </div>
+                <div class="stat-card" data-status="approved">
+                    <p>已通过</p>
+                    <strong id="statApproved">0</strong>
+                </div>
+                <div class="stat-card" data-status="rejected">
+                    <p>已拒绝</p>
+                    <strong id="statRejected">0</strong>
+                </div>
+            </div>
+
+            <div class="approval-grid">
+                <div class="approval-list-panel">
+                    <div class="panel-header">
+                        <div>
+                            <p class="history-title">提交列表</p>
+                            <p class="history-subtitle">按提交时间倒序展示</p>
+                        </div>
+                    </div>
+                    <div id="approvalList" class="approval-list" aria-live="polite">
+                        <div class="history-empty">请登录后查看提交记录</div>
+                    </div>
+                </div>
+                <div class="approval-detail-panel">
+                    <div class="panel-header">
+                        <div>
+                            <p class="history-title">详情预览</p>
+                            <p class="history-subtitle">点击左侧卡片查看具体内容</p>
+                        </div>
+                    </div>
+                    <div id="approvalDetail" class="approval-detail" hidden></div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="approval.js"></script>
+</body>
+
+</html>
