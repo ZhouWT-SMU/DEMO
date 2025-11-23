@@ -98,6 +98,8 @@ function renderApprovalDetail(submission) {
     }
 
     const statusInfo = formatStatus(submission.status);
+    const decisionName = submission.decisionByName || submission.decisionBy;
+    const decisionReason = submission.decisionReason || submission.decisionRemark;
     detail.dataset.id = submission.id;
     detail.hidden = false;
     detail.innerHTML = `
@@ -117,9 +119,11 @@ function renderApprovalDetail(submission) {
             <div><span>联系方式</span><strong>${submission.contactInfo || '-'}</strong></div>
             <div><span>提交时间</span><strong>${formatDateTime(submission.createdAt)}</strong></div>
             <div><span>处理时间</span><strong>${formatDateTime(submission.decisionAt)}</strong></div>
-            <div><span>处理备注</span><strong>${submission.decisionRemark || '—'}</strong></div>
+            <div><span>审批人</span><strong>${decisionName || '—'}</strong></div>
+            <div><span>审批意见</span><strong>${decisionReason || '—'}</strong></div>
         </div>
         <div class="result-section"><h4>业务简介</h4><p>${submission.businessIntro || '—'}</p></div>
+        ${decisionReason ? `<div class="result-section"><h4>审批理由</h4><p>${decisionReason}</p></div>` : ''}
         ${renderArraySection('核心产品', submission.coreProducts)}
         ${renderArraySection('知识产权', submission.intellectualProperties)}
         ${renderArraySection('专利', submission.patents)}
@@ -154,6 +158,7 @@ function renderApprovalList(list = []) {
                 </div>
                 <p class="muted">提交人：${item.submittedBy || '未知'} · ${formatDateTime(item.createdAt)}</p>
                 <p class="muted">统一信用代码：${item.creditCode || '-'}</p>
+                ${item.decisionByName || item.decisionReason ? `<p class="muted">审批人：${item.decisionByName || item.decisionBy || '—'}${item.decisionReason ? ` · ${item.decisionReason}` : ''}</p>` : ''}
             </div>
             <div class="approval-actions">
                 <button class="ghost-btn" data-approval-action="view" data-id="${item.id}">查看</button>
@@ -187,7 +192,7 @@ async function fetchSubmissions() {
     }
 }
 
-async function decideSubmission(id, action) {
+async function decideSubmission(id, action, remark) {
     if (!currentUser || currentUser.role !== 'ADMIN') {
         return;
     }
@@ -197,7 +202,7 @@ async function decideSubmission(id, action) {
             'Content-Type': 'application/json',
             'X-Auth-Token': currentUser.token,
         },
-        body: JSON.stringify({ decision: action }),
+        body: JSON.stringify({ decision: action, remark }),
     });
 }
 
@@ -226,6 +231,9 @@ function exportSubmissionsToXlsx() {
         提交人: item.submittedBy || '',
         提交时间: formatDateTime(item.createdAt),
         状态: formatStatus(item.status).text,
+        审批人: item.decisionByName || item.decisionBy || '',
+        审批时间: formatDateTime(item.decisionAt),
+        审批理由: item.decisionReason || item.decisionRemark || '',
         处理备注: item.decisionRemark || '',
     }));
 
@@ -262,8 +270,18 @@ function setupApprovalModule() {
                 return;
             }
 
+            const reason = window.prompt(`请输入${action === 'approve' ? '同意' : '拒绝'}理由`);
+            if (reason === null) {
+                return;
+            }
+            const trimmed = reason.trim();
+            if (!trimmed) {
+                setBanner('审批理由不能为空', true);
+                return;
+            }
+
             try {
-                await decideSubmission(id, action);
+                await decideSubmission(id, action, trimmed);
                 await fetchSubmissions();
                 const updated = submissionCache.find((entry) => entry.id === id);
                 if (updated) {
@@ -303,7 +321,7 @@ function setupAuth() {
         }
 
         currentUser = session;
-        updateUserStatus(`${session.displayName}（管理员）`);
+        updateUserStatus(`${session.displayName || session.username}（${session.username}）`);
 
         if (overlay) {
             overlay.classList.add('hidden');

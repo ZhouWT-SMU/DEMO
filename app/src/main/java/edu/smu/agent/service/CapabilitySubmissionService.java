@@ -59,6 +59,9 @@ public class CapabilitySubmissionService {
                 if (item.getCreatedAt() == null) {
                     item.setCreatedAt(Instant.now());
                 }
+                if (item.getDecisionReason() == null && item.getDecisionRemark() != null) {
+                    item.setDecisionReason(item.getDecisionRemark());
+                }
                 submissions.put(item.getId(), item);
             });
             log.info("Loaded {} capability submissions from disk", stored.size());
@@ -116,7 +119,7 @@ public class CapabilitySubmissionService {
                 .toList();
     }
 
-    public Submission decide(String id, Status status, String remark) {
+    public Submission decide(String id, Status status, String remark, String decisionBy, String decisionByName) {
         Submission submission = submissions.get(id);
         if (submission == null) {
             return null;
@@ -124,6 +127,9 @@ public class CapabilitySubmissionService {
 
         submission.setStatus(status);
         submission.setDecisionRemark(remark);
+        submission.setDecisionReason(remark);
+        submission.setDecisionBy(decisionBy);
+        submission.setDecisionByName(decisionByName);
         submission.setDecisionAt(Instant.now());
         persistSafely();
         return submission;
@@ -181,6 +187,9 @@ public class CapabilitySubmissionService {
         private Instant createdAt;
         private Instant decisionAt;
         private String decisionRemark;
+        private String decisionBy;
+        private String decisionByName;
+        private String decisionReason;
     }
 
     public enum Status {

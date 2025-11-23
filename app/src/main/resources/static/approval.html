@@ -63,7 +63,6 @@
                 <p>查看企业上传的能力信息，支持详情、同意或拒绝。</p>
             </div>
             <div class="action-group">
-                <button type="button" class="ghost-btn" id="refreshSubmissions">刷新列表</button>
                 <button type="button" class="icon-btn" id="exportSubmissions" title="导出能力企业列表">
                     <span aria-hidden="true">📥</span><span>导出xlsx</span>
                 </button>
@@ -95,6 +94,9 @@
                         <div>
                             <p class="history-title">提交列表</p>
                             <p class="history-subtitle">按提交时间倒序展示</p>
+                        </div>
+                        <div class="panel-actions">
+                            <button type="button" class="ghost-btn" id="refreshSubmissions">刷新列表</button>
                         </div>
                     </div>
                     <div id="approvalList" class="approval-list" aria-live="polite">
