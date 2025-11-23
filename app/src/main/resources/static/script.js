@@ -1599,26 +1599,23 @@ function renderUploadHistory(list = []) {
         const statusInfo = formatStatus(item.status);
         const decisionName = item.decisionByName || item.decisionBy;
         const decisionReason = item.decisionReason || item.decisionRemark;
+        const submitter = item.submittedBy || '企业用户';
+        const submitterAccount = item.submittedByUsername ? `（${item.submittedByUsername}）` : '';
         const card = document.createElement('div');
-        card.className = 'history-card';
+        card.className = 'result-card';
         card.innerHTML = `
-            <div class="history-row">
-                <div>
-                    <div class="history-title-row">
-                        <h4>${item.companyName || '未命名企业'}</h4>
-                        <div class="tag ${statusInfo.className}">${statusInfo.text}</div>
-                    </div>
-                    <p class="muted">提交时间：${formatDateTime(item.createdAt)}</p>
-                    <p class="muted">审核时间：${formatDateTime(item.decisionAt)}</p>
-                    <p class="muted">审批人：${decisionName || '待分配'}</p>
-                </div>
-                <div class="history-meta">
-                    <span class="muted">统一信用代码</span>
-                    <strong>${item.creditCode || '-'}</strong>
-                    <span class="muted">${item.companyType || ''}</span>
-                </div>
+            <div class="result-card-head">
+                <div class="result-card-title">${item.companyName || '未命名企业'}</div>
+                <div class="tag ${statusInfo.className}">${statusInfo.text}</div>
             </div>
-            ${decisionReason ? `<div class="history-remark"><span>审批意见</span><p>${decisionReason}</p></div>` : ''}
+            <div class="result-meta">
+                <span>提交人：${submitter}${submitterAccount}</span>
+                <span>提交时间：${formatDateTime(item.createdAt)}</span>
+                <span>统一信用代码：${item.creditCode || '-'}</span>
+                <span>审批人：${decisionName || '待分配'}</span>
+                <span>审核时间：${formatDateTime(item.decisionAt)}</span>
+            </div>
+            ${decisionReason ? `<div class="result-remark"><strong>审批意见</strong><span>${decisionReason}</span></div>` : ''}
         `;
 
         container.appendChild(card);

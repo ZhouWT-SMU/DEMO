@@ -310,91 +310,46 @@
         </section>
 
         <section id="resultModule" class="module" aria-labelledby="moduleTitle">
-            <div class="result-layout">
-                <div class="result-hero">
+            <div class="result-shell">
+                <div class="result-head">
                     <div>
                         <p class="eyebrow">审批结果查询</p>
-                        <h3>随时跟进每一次审核进度</h3>
-                        <p class="muted">结合审批状态、审批人和备注，快速锁定需要补充的资料。右侧提示帮助团队协同跟进。</p>
-                        <div class="hero-chips">
-                            <span class="pill">实时同步</span>
-                            <span class="pill pill-ghost">审批备注</span>
-                            <span class="pill pill-ghost">导出追踪</span>
-                        </div>
-                        <div class="hero-steps">
-                            <div class="step">提交资料</div>
-                            <div class="step">等待审核</div>
-                            <div class="step">查看反馈</div>
-                            <div class="step">补充完善</div>
-                        </div>
+                        <h3>提交列表</h3>
+                        <p class="muted">按时间倒序展示最近的审批记录，随时查看审批人、理由与统一信用代码。</p>
                     </div>
-                    <div class="hero-card">
-                        <div class="hero-card-head">最新提醒</div>
-                        <p>登录后可显示最近一次提交的状态与审批人意见，帮助快速响应。</p>
-                        <ul>
-                            <li>查看审批人姓名与意见</li>
-                            <li>根据理由调整材料再次提交</li>
-                            <li>导出结果便于团队内部同步</li>
-                        </ul>
+                    <div class="result-pills">
+                        <div class="pill-stat" data-status="pending">
+                            <span class="pill-label">待审核</span>
+                            <strong id="historyPending">0</strong>
+                        </div>
+                        <div class="pill-stat" data-status="approved">
+                            <span class="pill-label">已通过</span>
+                            <strong id="historyApproved">0</strong>
+                        </div>
+                        <div class="pill-stat" data-status="rejected">
+                            <span class="pill-label">已拒绝</span>
+                            <strong id="historyRejected">0</strong>
+                        </div>
                     </div>
                 </div>
 
-                <div class="result-summary-bar">
-                    <div class="summary-card" data-status="pending">
-                        <p>待审核</p>
-                        <strong id="historyPending">0</strong>
-                        <span>等待管理员处理</span>
-                    </div>
-                    <div class="summary-card" data-status="approved">
-                        <p>已通过</p>
-                        <strong id="historyApproved">0</strong>
-                        <span>可准备下一步合作</span>
-                    </div>
-                    <div class="summary-card" data-status="rejected">
-                        <p>已拒绝</p>
-                        <strong id="historyRejected">0</strong>
-                        <span>可根据原因重新提交</span>
-                    </div>
-                </div>
-
-                <div class="result-grid">
-                    <div class="upload-history-panel" id="uploadHistoryPanel" aria-live="polite">
-                        <div class="panel-header">
-                            <div>
-                                <p class="history-title">审批结果查询</p>
-                                <p class="history-subtitle">集中查看历史提交、审批反馈与审批人备注</p>
-                            </div>
-                            <div class="panel-actions">
-                                <button type="button" class="ghost-btn" id="refreshUploadHistory">刷新记录</button>
-                            </div>
+                <div class="result-list-panel" id="uploadHistoryPanel" aria-live="polite">
+                    <div class="panel-header">
+                        <div>
+                            <p class="history-title">提交列表</p>
+                            <p class="history-subtitle">按提交时间倒序展示</p>
                         </div>
-                        <div class="history-helper">
-                            <p>可按卡片查看每一次提交的审批人及处理意见，方便快速定位需要补充的材料。</p>
-                            <ul>
-                                <li>审批中：系统已接收，等待管理员处理</li>
-                                <li>通过：可继续与管理员沟通上线或导出</li>
-                                <li>拒绝：查看原因并根据提示修改重新提交</li>
-                            </ul>
-                        </div>
-                        <div id="uploadHistoryList" class="upload-history-list">
-                            <div class="history-empty">登录后可查看上传记录</div>
+                        <div class="panel-actions">
+                            <button type="button" class="ghost-btn" id="refreshUploadHistory">刷新列表</button>
                         </div>
                     </div>
-                    <aside class="result-sidebar">
-                        <div class="insight-card">
-                            <h4>进度追踪建议</h4>
-                            <p>对关键提交添加备注，方便团队内同步；若审批被拒绝，可结合审批人填写的原因调整材料后再次提交。</p>
-                        </div>
-                        <div class="insight-card">
-                            <h4>补充材料清单</h4>
-                            <ul class="bullet-list">
-                                <li>最新的业务介绍或产品手册</li>
-                                <li>能够体现竞争力的成功案例与数据</li>
-                                <li>资质证明、知识产权或合作协议</li>
-                                <li>明确的联系人信息和可沟通时间</li>
-                            </ul>
-                        </div>
-                    </aside>
+                    <div class="result-list-helper">
+                        <span>温馨提示：</span>
+                        <p>卡片展示审批状态、审批人姓名与理由，支持滚动查看更多历史记录。</p>
+                    </div>
+                    <div id="uploadHistoryList" class="result-list">
+                        <div class="history-empty">登录后可查看上传记录</div>
+                    </div>
                 </div>
             </div>
         </section>
