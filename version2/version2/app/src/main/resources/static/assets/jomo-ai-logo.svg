@@ -1,0 +1,16 @@
+<svg width="320" height="120" viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">究模智科技 Logo</title>
+  <desc id="desc">蓝底白字的究模智科技标识，包含 JIU 与中文和 Jomo AI 文本。</desc>
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0c4ccf" />
+      <stop offset="100%" stop-color="#0a3ea8" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="120" rx="18" fill="url(#g)" />
+  <g fill="#ffffff" font-family="'Segoe UI', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif">
+    <text x="24" y="78" font-size="72" font-weight="800">JIU</text>
+    <text x="140" y="56" font-size="26" font-weight="600">究模智科技</text>
+    <text x="140" y="88" font-size="18" font-weight="400" letter-spacing="1">Jomo AI</text>
+  </g>
+</svg>
